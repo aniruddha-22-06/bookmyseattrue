@@ -1,0 +1,140 @@
+{% extends "users/basic.html" %}
+{% block title %}Admin Analytics{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Admin Analytics Dashboard</h2>
+  <small id="generatedAt" class="text-muted">Loading...</small>
+</div>
+
+<div class="row">
+  <div class="col-md-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Daily Revenue</h6>
+        <h4 id="dailyRevenue">-</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Weekly Revenue</h6>
+        <h4 id="weeklyRevenue">-</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Monthly Revenue</h6>
+        <h4 id="monthlyRevenue">-</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5>Most Popular Movies</h5>
+        <ul id="popularMovies" class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5>Busiest Theaters (Occupancy)</h5>
+        <ul id="busiestTheaters" class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5>Peak Booking Hours</h5>
+        <ul id="peakHours" class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5>Cancellation Insights</h5>
+        <div id="cancellationSummary"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function formatInr(v) {
+    return "INR " + Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function createListItem(text) {
+    const li = document.createElement("li");
+    li.className = "list-group-item";
+    li.textContent = text;
+    return li;
+  }
+
+  function renderList(containerId, rows, labelFn, emptyText) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = "";
+    if (!rows || !rows.length) {
+      el.appendChild(createListItem(emptyText));
+      return;
+    }
+    rows.forEach((row) => el.appendChild(createListItem(labelFn(row))));
+  }
+
+  async function loadAnalytics() {
+    const response = await fetch("{% url 'admin_analytics_api' %}", { credentials: "same-origin" });
+    if (!response.ok) {
+      document.getElementById("generatedAt").textContent = "Access denied";
+      return;
+    }
+
+    const data = await response.json();
+    document.getElementById("dailyRevenue").textContent = formatInr(data.revenue.daily_inr);
+    document.getElementById("weeklyRevenue").textContent = formatInr(data.revenue.weekly_inr);
+    document.getElementById("monthlyRevenue").textContent = formatInr(data.revenue.monthly_inr);
+    document.getElementById("generatedAt").textContent = "Updated: " + new Date(data.generated_at).toLocaleString();
+
+    renderList(
+      "popularMovies",
+      data.most_popular_movies,
+      (r) => `${r.movie__name}: ${r.total_bookings} bookings`,
+      "No bookings yet"
+    );
+    renderList(
+      "busiestTheaters",
+      data.busiest_theaters,
+      (r) => `${r.name} (${r.movie__name}): ${Number(r.occupancy_rate).toFixed(2)}%`,
+      "No theater data"
+    );
+    renderList(
+      "peakHours",
+      data.peak_booking_hours,
+      (r) => `${String(r.hour).padStart(2, "0")}:00 - ${r.total_bookings} bookings`,
+      "No booking activity"
+    );
+
+    const c = data.cancellation;
+    document.getElementById("cancellationSummary").innerHTML = `
+      <p class="mb-1">Total payments: <strong>${c.total_payments}</strong></p>
+      <p class="mb-1">Cancelled: <strong>${c.cancelled_payments}</strong> (${c.cancellation_rate_percent}%)</p>
+      <p class="mb-1">Failed: <strong>${c.failed_payments}</strong> (${c.failure_rate_percent}%)</p>
+      <p class="mb-0">Expired: <strong>${c.expired_payments}</strong> (${c.timeout_rate_percent}%)</p>
+    `;
+  }
+
+  loadAnalytics();
+  setInterval(loadAnalytics, 60000);
+</script>
+{% endblock %}

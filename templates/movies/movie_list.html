@@ -1,0 +1,164 @@
+{% extends "users/basic.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="text-center mb-4">Movies</h1>
+
+  <form method="get" action="{% url 'movie_list' %}">
+    <div class="row mb-4">
+      <div class="col-md-7 mb-2">
+        <input
+          class="form-control"
+          name="search"
+          placeholder="Search movie by name"
+          type="text"
+          value="{{ search_query }}"
+        />
+      </div>
+      <div class="col-md-3 mb-2">
+        <select class="form-control" name="sort" onchange="this.form.submit()">
+          <option value="name_asc" {% if sort_key == 'name_asc' %}selected{% endif %}>Name A-Z</option>
+          <option value="name_desc" {% if sort_key == 'name_desc' %}selected{% endif %}>Name Z-A</option>
+          <option value="rating_desc" {% if sort_key == 'rating_desc' %}selected{% endif %}>Rating High-Low</option>
+          <option value="rating_asc" {% if sort_key == 'rating_asc' %}selected{% endif %}>Rating Low-High</option>
+          <option value="newest" {% if sort_key == 'newest' %}selected{% endif %}>Newest First</option>
+        </select>
+      </div>
+      <div class="col-md-2 mb-2">
+        <button class="btn btn-primary btn-block" type="submit">Apply</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-3 mb-4">
+        <div class="card mb-3">
+          <div class="card-header"><strong>Genres</strong></div>
+          <div class="card-body" style="max-height: 260px; overflow-y: auto;">
+            {% for genre in genres %}
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                name="genres"
+                value="{{ genre.id }}"
+                id="genre-{{ genre.id }}"
+                {% if genre.id in selected_genre_ids %}checked{% endif %}
+              />
+              <label class="form-check-label" for="genre-{{ genre.id }}">
+                {{ genre.name }} ({{ genre.movie_count }})
+              </label>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">No genre options</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header"><strong>Languages</strong></div>
+          <div class="card-body" style="max-height: 260px; overflow-y: auto;">
+            {% for language in languages %}
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                name="languages"
+                value="{{ language.id }}"
+                id="lang-{{ language.id }}"
+                {% if language.id in selected_language_ids %}checked{% endif %}
+              />
+              <label class="form-check-label" for="lang-{{ language.id }}">
+                {{ language.name }} ({{ language.movie_count }})
+              </label>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">No language options</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button class="btn btn-outline-primary btn-block mb-2" type="submit">Apply Filters</button>
+        <a class="btn btn-outline-secondary btn-block" href="{% url 'movie_list' %}">Reset</a>
+      </div>
+
+      <div class="col-lg-9">
+        <p class="text-muted">Showing {{ total_results }} result{{ total_results|pluralize }}</p>
+        <div class="row">
+          {% for movie in movies %}
+          <div class="col-md-6 col-xl-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <img src="{{ movie.poster_url }}" class="card-img-top" alt="{{ movie.name }}" style="height: 280px; object-fit: contain; background-color: #f4f4f4;" onerror="this.onerror=null;this.src='{% static 'img/poster_placeholder.svg' %}';" />
+              <div class="card-body">
+                <h5 class="card-title">{{ movie.name }}</h5>
+                <p class="card-text mb-1"><i class="fas fa-star text-warning"></i> {{ movie.rating }}</p>
+                <p class="card-text mb-1"><small class="text-muted">Cast: {{ movie.cast }}</small></p>
+                <p class="card-text mb-1">
+                  <small class="text-muted">
+                    Genre:
+                    {% for g in movie.genres.all %}
+                      {{ g.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                      -
+                    {% endfor %}
+                  </small>
+                </p>
+                <p class="card-text mb-0">
+                  <small class="text-muted">
+                    Language:
+                    {% for l in movie.languages.all %}
+                      {{ l.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                      -
+                    {% endfor %}
+                  </small>
+                </p>
+              </div>
+              <div class="card-footer bg-white border-top-0">
+                <a href="{% url 'theater_list' movie.id %}" class="btn btn-outline-primary btn-block">View Theaters</a>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12">
+            <p class="lead text-center">No movies found for current filters.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="Movies pagination">
+          <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="{% if query_without_page %}?{{ query_without_page }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}">Previous</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item">
+              <a class="page-link" href="{% if query_without_page %}?{{ query_without_page }}&page={{ num }}{% else %}?page={{ num }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="{% if query_without_page %}?{{ query_without_page }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}">Next</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

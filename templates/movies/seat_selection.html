@@ -1,0 +1,143 @@
+{% extends "users/basic.html" %} {% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+              <h4 class="card-title">{{ theaters.movie.name }}</h4>
+              <p class="card-text text-muted">{{ theaters.name }} | {{ theaters.show_time }}</p>
+            </div>
+            <div class="mt-2 mt-sm-0">
+              <button class="btn btn-outline-primary me-2 mb-2 mb-sm-0" type="button">2D</button>
+              <button class="btn btn-outline-primary me-2 mb-2 mb-sm-0" type="button">3D</button>
+              <button class="btn btn-outline-primary mb-2 mb-sm-0" type="button">IMAX 3D</button>
+              <button class="btn btn-outline-primary mb-2 mb-sm-0" type="button">{{ seats|length }} Tickets</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title text-center mb-4">Select Your Seats</h5>
+          <div class="screen">All eyes this way please!</div>
+
+          {% if error %}
+          <div class="alert alert-danger">{{ error }}</div>
+          {% endif %}
+
+          <form method="POST">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center flex-wrap mb-4">
+              {% for seat in seats %}
+              <div class="seat {% if seat.is_booked %}booked{% elif seat.locked_by and seat.locked_by != request.user and seat.lock_expires_at and seat.lock_expires_at > now %}locked{% endif %}">
+                {% if seat.is_booked %}
+                <span class="seat-label">{{ seat.seat_number }}</span>
+                {% elif seat.locked_by and seat.locked_by != request.user and seat.lock_expires_at and seat.lock_expires_at > now %}
+                <span class="seat-label">{{ seat.seat_number }}</span>
+                {% else %}
+                <input type="checkbox" name="seats" value="{{ seat.id }}" class="seat-checkbox" id="seat-{{ seat.id }}" />
+                <label for="seat-{{ seat.id }}" class="seat-label">{{ seat.seat_number }}</label>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-center mb-4">
+              <div class="d-flex align-items-center me-4">
+                <div class="seat"><span class="seat-label">A1</span></div>
+                <span class="ms-2">Available</span>
+              </div>
+              <div class="d-flex align-items-center me-4">
+                <div class="seat selected"><span class="seat-label">A2</span></div>
+                <span class="ms-2">Selected</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="seat booked"><span class="seat-label">A3</span></div>
+                <span class="ms-2">Booked</span>
+              </div>
+              <div class="d-flex align-items-center ms-4">
+                <div class="seat locked"><span class="seat-label">A4</span></div>
+                <span class="ms-2">Locked by others</span>
+              </div>
+            </div>
+            <p class="text-muted text-center"><small>Selected seats are locked for 2 minutes while payment is pending.</small></p>
+
+            <div class="text-center">
+              <button type="submit" class="btn btn-success btn-lg">Proceed To Payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+  }
+  .seat {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #28a745;
+    margin: 4px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .seat-label {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 0;
+    font-size: 12px;
+    user-select: none;
+  }
+  .seat:hover:not(.booked):not(.locked) {
+    background-color: #28a745;
+    color: #fff;
+  }
+  .seat-checkbox {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .seat-checkbox:checked + .seat-label {
+    background-color: #28a745;
+    color: #fff;
+  }
+  .seat.selected {
+    background-color: #28a745;
+    color: #fff;
+  }
+  .seat.booked {
+    background-color: #ccc;
+    cursor: not-allowed;
+    border-color: #bbb;
+  }
+  .seat.booked .seat-label {
+    cursor: not-allowed;
+  }
+  .seat.locked {
+    background-color: #f8d7da;
+    cursor: not-allowed;
+    border-color: #dc3545;
+  }
+  .seat.locked .seat-label {
+    cursor: not-allowed;
+  }
+  .screen {
+    margin: 20px 0;
+    background-color: #ccc;
+    height: 50px;
+    text-align: center;
+    line-height: 50px;
+    color: #666;
+  }
+</style>
+{% endblock %}

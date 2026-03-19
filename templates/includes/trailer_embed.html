@@ -1,0 +1,39 @@
+{% load static %}
+<section
+  data-trailer-block
+  data-trailer-video-id="{{ trailer_video_id|default:'' }}"
+  data-trailer-title="{{ movie.name|default:'Movie trailer' }}"
+  aria-label="Trailer section"
+  class="trailer-block"
+>
+  {% if trailer_video_id %}
+    <div data-trailer-placeholder style="text-align: center;">
+      <button type="button" data-trailer-play class="btn btn-danger mb-3" aria-label="Play trailer for {{ movie.name|default:'this movie' }}">
+        Play Trailer
+      </button>
+      {% if trailer_watch_url %}
+      <a class="btn btn-outline-secondary mb-3 ml-2" href="{{ trailer_watch_url }}" target="_blank" rel="noopener noreferrer">
+        Watch on YouTube
+      </a>
+      {% endif %}
+      <div class="mb-3">
+        <img
+          src="{{ movie.poster_url }}"
+          alt="{{ movie.name|default:'Movie' }} poster"
+          loading="lazy"
+          onerror="this.onerror=null;this.src='{% static 'img/poster_placeholder.svg' %}';"
+          style="display: inline-block; max-width: 100%; border-radius: 8px; max-height: 420px; object-fit: contain; background-color: transparent;"
+        />
+      </div>
+    </div>
+    <div data-trailer-frame></div>
+    <p data-trailer-fallback hidden class="text-warning">
+      Trailer embed unavailable.
+      {% if trailer_watch_url %}
+      <a href="{{ trailer_watch_url }}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
+      {% endif %}
+    </p>
+  {% else %}
+    <p class="text-warning">Trailer unavailable</p>
+  {% endif %}
+</section>

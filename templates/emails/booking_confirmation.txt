@@ -1,0 +1,17 @@
+Hi {{ username }},
+
+Your booking is confirmed.
+
+Movie: {{ movie_name }}
+Theater: {{ theater_name }}
+Show Time: {{ show_time }}
+Seats: {{ seat_numbers|join:", " }}
+Amount Paid: INR {{ amount_inr }}
+Payment ID: {{ payment_id }}
+Gateway Payment ID: {{ gateway_payment_id|default:"N/A" }}
+Booked At: {{ booked_at }}
+
+Please keep this email for reference.
+
+Thanks,
+BookMySeat Team

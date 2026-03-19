@@ -1,0 +1,1 @@
+Booking Confirmed: {{ movie_name }} - Payment {{ payment_id }}

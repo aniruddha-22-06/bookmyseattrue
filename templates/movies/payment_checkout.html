@@ -1,0 +1,158 @@
+{% extends "users/basic.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="mb-3">Payment Checkout</h3>
+          <p class="mb-2"><strong>Movie:</strong> {{ theater.movie.name }}</p>
+          <p class="mb-2"><strong>Theater:</strong> {{ theater.name }}</p>
+          <p class="mb-2"><strong>Seats:</strong> {{ seat_numbers|join:", " }}</p>
+          <p class="mb-2"><strong>Total:</strong> INR {{ amount_inr }}</p>
+          {% if payment_expires_at %}
+          <p class="mb-4 text-muted"><small><strong>Seat lock expires at:</strong> {{ payment_expires_at }} (2-minute hold)</small></p>
+          <p class="mb-3"><strong>Time Left:</strong> <span id="lock-countdown">--:--</span></p>
+          {% endif %}
+
+          {% if gateway_error %}
+          <div class="alert alert-danger mb-0">{{ gateway_error }}</div>
+          {% else %}
+          <form id="payment-verify-form" method="post" action="{% url 'verify_payment' %}">
+            {% csrf_token %}
+            <input type="hidden" name="payment_db_id" value="{{ payment_db_id }}" />
+            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id" />
+            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="{{ razorpay_order_id }}" />
+            <input type="hidden" name="razorpay_signature" id="razorpay_signature" />
+            {% if payment_mock_mode %}
+            <button id="mock-pay-button" type="submit" class="btn btn-primary btn-lg">Simulate Payment Success</button>
+            {% else %}
+            <button id="rzp-button" type="button" class="btn btn-primary btn-lg">Pay Now</button>
+            {% endif %}
+          </form>
+
+          <form id="payment-cancel-form" class="mt-2" method="post" action="{% url 'cancel_payment' %}">
+            {% csrf_token %}
+            <input type="hidden" name="payment_db_id" value="{{ payment_db_id }}" />
+            <input type="hidden" name="cancel_reason" id="cancel_reason" value="User cancelled from checkout page" />
+            <button type="submit" class="btn btn-outline-secondary">Cancel Payment</button>
+          </form>
+
+          <p class="text-muted mt-3 mb-0"><small>Idempotency Key: {{ payment_idempotency_key }}</small></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not gateway_error %}
+<script>
+  const paymentId = "{{ payment_db_id }}";
+  const lockStatusUrl = "{% url 'payment_lock_status' %}";
+  const paymentExpiresAt = "{{ payment_expires_at|date:'c' }}";
+  const lockCountdownEl = document.getElementById("lock-countdown");
+
+  function msRemaining(targetIso) {
+    const targetMs = new Date(targetIso).getTime();
+    return targetMs - Date.now();
+  }
+
+  function formatMs(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const mins = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+    const secs = (totalSeconds % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+  }
+
+  function stopPaymentUi(reason) {
+    const payButton = document.getElementById("rzp-button");
+    if (payButton) {
+      payButton.disabled = true;
+      payButton.textContent = reason || "Seat lock expired";
+    }
+    if (lockCountdownEl) {
+      lockCountdownEl.textContent = "00:00";
+    }
+    window.location.href = "{% url 'book_seats' theater.id %}";
+  }
+
+  function updateCountdown() {
+    if (!paymentExpiresAt || !lockCountdownEl) {
+      return;
+    }
+    const remaining = msRemaining(paymentExpiresAt);
+    lockCountdownEl.textContent = formatMs(remaining);
+    if (remaining <= 0) {
+      stopPaymentUi("Seat lock expired");
+    }
+  }
+
+  async function pollLockStatus() {
+    try {
+      const response = await fetch(`${lockStatusUrl}?payment_db_id=${encodeURIComponent(paymentId)}`, {
+        method: "GET",
+        credentials: "same-origin",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      if (!data.ok) {
+        return;
+      }
+      if (data.payment_status !== "pending" || (Array.isArray(data.invalid_lock_seats) && data.invalid_lock_seats.length > 0)) {
+        stopPaymentUi("Seat lock no longer valid");
+      }
+    } catch (err) {
+      // Keep UI usable even if polling fails temporarily.
+    }
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+  setInterval(pollLockStatus, 5000);
+</script>
+
+{% if not payment_mock_mode %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+
+  const options = {
+    key: "{{ razorpay_key_id }}",
+    amount: "{{ amount_paise }}",
+    currency: "INR",
+    name: "BookMySeat",
+    description: "Seat Booking Payment",
+    order_id: "{{ razorpay_order_id }}",
+    handler: function (response) {
+      document.getElementById("razorpay_payment_id").value = response.razorpay_payment_id;
+      document.getElementById("razorpay_order_id").value = response.razorpay_order_id;
+      document.getElementById("razorpay_signature").value = response.razorpay_signature;
+      document.getElementById("payment-verify-form").submit();
+    },
+    modal: {
+      ondismiss: function () {
+        const reason = document.getElementById("cancel_reason");
+        if (reason) {
+          reason.value = "User closed Razorpay checkout modal";
+        }
+      }
+    },
+    theme: {
+      color: "#0d6efd"
+    }
+  };
+
+  const rzp = new Razorpay(options);
+  document.getElementById("rzp-button").onclick = function (e) {
+    rzp.open();
+    e.preventDefault();
+  };
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+<html>
+  <body style="font-family: Arial, sans-serif; color: #222;">
+    <h2>Booking Confirmed</h2>
+    <p>Hi {{ username }},</p>
+    <p>Your ticket booking has been confirmed.</p>
+    <table cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse;">
+      <tr><td><strong>Movie</strong></td><td>{{ movie_name }}</td></tr>
+      <tr><td><strong>Theater</strong></td><td>{{ theater_name }}</td></tr>
+      <tr><td><strong>Show Time</strong></td><td>{{ show_time }}</td></tr>
+      <tr><td><strong>Seats</strong></td><td>{{ seat_numbers|join:", " }}</td></tr>
+      <tr><td><strong>Amount Paid</strong></td><td>INR {{ amount_inr }}</td></tr>
+      <tr><td><strong>Payment ID</strong></td><td>{{ payment_id }}</td></tr>
+      <tr><td><strong>Gateway Payment ID</strong></td><td>{{ gateway_payment_id|default:"N/A" }}</td></tr>
+      <tr><td><strong>Booked At</strong></td><td>{{ booked_at }}</td></tr>
+    </table>
+    <p style="margin-top: 16px;">Please keep this email for your records.</p>
+    <p>BookMySeat Team</p>
+  </body>
+</html>
