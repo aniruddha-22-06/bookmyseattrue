@@ -79,9 +79,11 @@ def profile(request):
     return render(request, 'users/profile.html', {'u_form': u_form,'bookings':bookings})
 
 def reset_password(request):
-    if not request.user.is_authenticated:
-        return forgot_password(request)
+    return forgot_password(request)
 
+
+@login_required
+def change_password(request):
     if request.method == 'POST':
         form=PasswordChangeForm(user=request.user,data=request.POST)
         if form.is_valid():
