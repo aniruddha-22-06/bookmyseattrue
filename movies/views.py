@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -20,6 +21,8 @@ from .models import Booking, Genre, Language, Movie, Payment, PaymentWebhookEven
 from .seat_locking import acquire_seat_locks, release_expired_seat_locks, release_seat_locks_for_user, seats_with_invalid_lock_for_user
 from .trailer_security import build_watch_url, extract_youtube_video_id
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_multi_select_ints(raw_values):
     ids = set()
@@ -29,6 +32,13 @@ def _parse_multi_select_ints(raw_values):
             if part.isdigit():
                 ids.add(int(part))
     return sorted(ids)
+
+
+def _send_booking_confirmation_email_safely(payment, seat_numbers):
+    try:
+        send_booking_confirmation_email(payment, seat_numbers)
+    except Exception:
+        logger.exception('Booking confirmation email dispatch failed for payment_id=%s', payment.id)
 
 
 def _apply_movie_filters(queryset, search_query='', genre_ids=None, language_ids=None):
@@ -271,7 +281,7 @@ def _lock_and_finalize_payment(
         ])
 
         seat_numbers = [seat.seat_number for seat in seats]
-        transaction.on_commit(lambda: send_booking_confirmation_email(payment, seat_numbers))
+        transaction.on_commit(lambda: _send_booking_confirmation_email_safely(payment, seat_numbers))
 
         return True, 'paid', payment
 
