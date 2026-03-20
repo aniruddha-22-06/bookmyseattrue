@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import logging
+from threading import Thread
 
 from django.conf import settings
 from django.contrib import messages
@@ -39,6 +40,14 @@ def _send_booking_confirmation_email_safely(payment, seat_numbers):
         send_booking_confirmation_email(payment, seat_numbers)
     except Exception:
         logger.exception('Booking confirmation email dispatch failed for payment_id=%s', payment.id)
+
+
+def _send_booking_confirmation_email_async(payment, seat_numbers):
+    Thread(
+        target=_send_booking_confirmation_email_safely,
+        args=(payment, seat_numbers),
+        daemon=True,
+    ).start()
 
 
 def _apply_movie_filters(queryset, search_query='', genre_ids=None, language_ids=None):
@@ -281,7 +290,7 @@ def _lock_and_finalize_payment(
         ])
 
         seat_numbers = [seat.seat_number for seat in seats]
-        transaction.on_commit(lambda: _send_booking_confirmation_email_safely(payment, seat_numbers))
+        transaction.on_commit(lambda: _send_booking_confirmation_email_async(payment, seat_numbers))
 
         return True, 'paid', payment
 
