@@ -2,7 +2,7 @@ import logging
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.mail import EmailMultiAlternatives
@@ -78,17 +78,21 @@ def profile(request):
 
     return render(request, 'users/profile.html', {'u_form': u_form,'bookings':bookings})
 
-@login_required
 def reset_password(request):
+    if not request.user.is_authenticated:
+        return forgot_password(request)
+
     if request.method == 'POST':
         form=PasswordChangeForm(user=request.user,data=request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            update_session_auth_hash(request, user)
             _send_password_change_email(request.user)
-            return redirect('login')
+            messages.success(request, 'Your password has been updated successfully.')
+            return redirect('profile')
     else:
         form=PasswordChangeForm(user=request.user)
-    return render(request,'users/reset_password.html',{'form':form})
+    return render(request,'users/change_password.html',{'form':form})
 
 
 def _send_password_change_email(user):
