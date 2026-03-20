@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .analytics import get_admin_analytics_snapshot
 from .authz import admin_analytics_api_required, admin_analytics_required
-from .email_queue import enqueue_booking_confirmation_email
+from .email_queue import send_booking_confirmation_email
 from .models import Booking, Genre, Language, Movie, Payment, PaymentWebhookEvent, Seat, Theater
 from .seat_locking import acquire_seat_locks, release_expired_seat_locks, release_seat_locks_for_user, seats_with_invalid_lock_for_user
 from .trailer_security import build_watch_url, extract_youtube_video_id
@@ -36,7 +36,7 @@ def _parse_multi_select_ints(raw_values):
 
 def _send_booking_confirmation_email_safely(payment, seat_numbers):
     try:
-        enqueue_booking_confirmation_email(payment, seat_numbers)
+        send_booking_confirmation_email(payment, seat_numbers)
     except Exception:
         logger.exception('Booking confirmation email dispatch failed for payment_id=%s', payment.id)
 

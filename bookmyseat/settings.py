@@ -81,7 +81,10 @@ EMAIL_HOST_USER = _env_clean('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = _env_clean('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
-DEFAULT_FROM_EMAIL = _env_clean('DEFAULT_FROM_EMAIL', 'no-reply@bookmyseat.local')
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    # Port 587 expects STARTTLS, not implicit SSL.
+    EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = _env_clean('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@bookmyseat.local')
 
 TEMPLATES = [
     {

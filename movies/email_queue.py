@@ -54,7 +54,9 @@ def _build_email_message(task: EmailDeliveryTask):
     text_body = render_to_string('emails/booking_confirmation.txt', context)
     html_body = render_to_string('emails/booking_confirmation.html', context)
 
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@bookmyseat.local')
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or getattr(settings, 'EMAIL_HOST_USER', '')
+    if not from_email or from_email.endswith('@bookmyseat.local'):
+        from_email = getattr(settings, 'EMAIL_HOST_USER', '') or 'no-reply@bookmyseat.local'
     message = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
