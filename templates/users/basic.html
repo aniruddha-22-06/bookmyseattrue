@@ -106,7 +106,7 @@
             <li class="nav-item">
               <a class="nav-link" href="{% url 'profile' %}">Profile</a>
             </li>
-            {% if user.is_staff or user.is_superuser %}
+            {% if user.is_staff or user.is_superuser or user.username == 'admin' %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'admin_analytics_dashboard' %}">Admin Analytics</a>
             </li>
