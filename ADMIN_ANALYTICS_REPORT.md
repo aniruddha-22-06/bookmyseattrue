@@ -16,9 +16,9 @@
 - Unauthorized API calls return `401`/`403`.
 
 ## Admin Credentials Used for Demo
-- Username: `analytics_admin`
+- Username: `admin`
 - Email: `aniruddhaa719@gmail.com`
-- Password: `ani2006`
+- Password: `ani@2006`
 
 To create or reset this user locally:
 - `python manage.py seed_admin_analytics_user --reset-password`

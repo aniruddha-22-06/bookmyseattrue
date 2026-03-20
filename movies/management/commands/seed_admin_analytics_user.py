@@ -3,8 +3,8 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
 
-DEFAULT_USERNAME = 'analytics_admin'
-DEFAULT_PASSWORD = 'ani2006'
+DEFAULT_USERNAME = 'admin'
+DEFAULT_PASSWORD = 'ani@2006'
 DEFAULT_EMAIL = 'aniruddhaa719@gmail.com'
 
 

@@ -61,7 +61,7 @@ Create/reset admin user:
 ```powershell
 python manage.py seed_admin_analytics_user --reset-password
 ```
-Default admin username is `analytics_admin` (password is set in the seed command).
+Default admin username is `admin` and the default password is `ani@2006`.
 
 ## Render Deploy (quick)
 - Root Directory: `BOOKMYSEAT/BOOKMYSEAT/BOOKMYSEAT`
